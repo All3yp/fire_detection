@@ -3,12 +3,13 @@ import subprocess
 from pathlib import Path
 from dotenv import load_dotenv
 import requests
+import sys
 
 ########## Configs ##########
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env")
 DAGSHUB_TOKEN = os.getenv("DAGSHUB_TOKEN")
 USERNAME = os.getenv("USERNAME")
-REPO = os.getenv("REPO")
+REPO = os.getenv("REPO_NAME")
 REPO_PATH = f"{USERNAME}/{REPO}"
 ##############################
 
@@ -17,13 +18,24 @@ if not DAGSHUB_TOKEN:
 
 def testar_conexao_dagshub(token):
     print("🔐 Testing DagsHub authentication...")
+    
+    # First test user authentication
+    user_url = "https://dagshub.com/api/v1/user"
+    response = requests.get(user_url, auth=(USERNAME, token))
+    if response.status_code != 200:
+        print(f"❌ User authentication failed ({response.status_code}): {response.text}")
+        return False
+    
+    # Then test repository access
     url = f"https://dagshub.com/api/v1/repos/{USERNAME}/{REPO}"
     response = requests.get(url, auth=(USERNAME, token))
     if response.status_code == 200:
         print("✅ DagsHub connection OK")
         return True
-    print(f"❌ Authentication failed ({response.status_code}): {response.text}")
-    return False
+    else:
+        print(f"❌ Repository access failed ({response.status_code}): {response.text}")
+        print(f"Trying to access: {url}")
+        return False
 
 def install_dagshub_client():
     print("🔧 Checking DagsHub client...")
@@ -44,9 +56,13 @@ def login_dagshub():
 def upload_datasets():
     print("📤 Uploading datasets to DagsHub bucket...")
 
-    datasets_to_upload = [
-        "datasets/"
-    ]
+    # Get datasets from command line arguments or use default
+    if len(sys.argv) > 1:
+        datasets_to_upload = sys.argv[1:]
+        print(f"📋 Datasets to upload (from arguments): {datasets_to_upload}")
+    else:
+        datasets_to_upload = ["datasets/"]
+        print(f"📋 Using default dataset path: {datasets_to_upload}")
     
     for dataset_path in datasets_to_upload:
         path_obj = Path(dataset_path)

@@ -6,15 +6,16 @@ import requests
 import sys
 
 ########## Configs ##########
-load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env")
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 DAGSHUB_TOKEN = os.getenv("DAGSHUB_TOKEN")
-USERNAME = os.getenv("USERNAME")
-REPO = os.getenv("REPO_NAME")
-REPO_PATH = f"{USERNAME}/{REPO}"
+USERNAME      = os.getenv("USERNAME")
+REPO          = os.getenv("REPO_NAME")
+BRANCH        = os.getenv("DAGSHUB_BRANCH", "main")
+REPO_PATH     = f"{USERNAME}/{REPO}"
 ##############################
 
-if not DAGSHUB_TOKEN:
-    raise ValueError("❌ DAGSHUB_TOKEN not found in .env")
+if not all([DAGSHUB_TOKEN, USERNAME, REPO]):
+    raise ValueError("❌ .env must contain DAGSHUB_TOKEN, USERNAME, REPO_NAME")
 
 def testar_conexao_dagshub(token):
     print("🔐 Testing DagsHub authentication...")
@@ -40,10 +41,11 @@ def testar_conexao_dagshub(token):
 def install_dagshub_client():
     print("🔧 Checking DagsHub client...")
     try:
-        subprocess.run(["dagshub", "--help"], capture_output=True, text=True, check=True)
+        subprocess.run(["dagshub", "--help"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
     except (FileNotFoundError, subprocess.CalledProcessError):
-        print("📦 Installing DagsHub client...")
-        subprocess.run(["uv", "pip", "install", "dagshub", "--upgrade"], check=True)
+        print("📦 Installing/Upgrading DagsHub client...")
+        subprocess.run([sys.executable, "-m", "pip", "install", "-U", "dagshub"], check=True)
+        print("✅ DagsHub client installed/updated successfully")
 
 def login_dagshub():
     print("🔐 Performing automatic login to DagsHub via token...")
@@ -54,20 +56,14 @@ def login_dagshub():
         print(f"⚠️  Warning during login: {e.stderr}")
 
 def upload_datasets():
-    print("📤 Uploading datasets to DagsHub bucket...")
+    # decide which datasets
+    datasets_to_upload = sys.argv[1:] or ["datasets/"]
+    print("📋 Upload list:", datasets_to_upload)
 
-    # Get datasets from command line arguments or use default
-    if len(sys.argv) > 1:
-        datasets_to_upload = sys.argv[1:]
-        print(f"📋 Datasets to upload (from arguments): {datasets_to_upload}")
-    else:
-        datasets_to_upload = ["datasets/"]
-        print(f"📋 Using default dataset path: {datasets_to_upload}")
-    
     for dataset_path in datasets_to_upload:
         path_obj = Path(dataset_path)
         if not path_obj.exists():
-            print(f"⚠️  Dataset not found: {dataset_path}, skipping...")
+            print(f"⚠️  Not found, skipping: {dataset_path}")
             continue
 
         print(f"📁 Uploading: {dataset_path}")
@@ -77,11 +73,12 @@ def upload_datasets():
                 REPO_PATH,
                 dataset_path,
                 f"data/{path_obj.name}/",
-                "--bucket", "--update", "-v"
+                "--bucket", "--update", "-v",
+                "--branch", BRANCH
             ], check=True)
-            print(f"✅ Upload completed: {dataset_path}")
+            print(f"✅ Completed: {dataset_path}")
         except subprocess.CalledProcessError as e:
-            print(f"❌ Upload error for {dataset_path}: {e.stderr}")
+            print(f"❌ Upload error: {e.stderr or e}")
 
 if __name__ == "__main__":
     print("🚀 Starting upload to DagsHub bucket...")

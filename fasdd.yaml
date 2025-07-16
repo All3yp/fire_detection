@@ -1,22 +1,14 @@
-# FASDD Dataset Configuration for YOLO
-# Fire and Smoke Detection Dataset
+# FASDD Dataset - 4.5GB optimized version for Google Colab
+# Total files: 149,042 | Size: 4.50 GB | Reduction: ~62% from original
 
-# Dataset paths
-path: data/FASDD_CV  # dataset root dir
-train: annotations/YOLO_CV/train.txt  # train images list
-val: annotations/YOLO_CV/val.txt      # val images list  
-test: annotations/YOLO_CV/test.txt    # test images list (optional)
+path: dataset1000
+train: annotations/train.txt
+val: annotations/val.txt  
+test: annotations/test.txt
 
 # Classes
-names:
-  0: fire
-  1: smoke  
-  2: bothFireAndSmoke
-  3: neitherFireNorSmoke
-
-# Number of classes
-nc: 4
-
-# Additional configuration
-# Labels will be automatically found in annotations/YOLO_CV/labels/
-# Images are in images/ directory with class prefixes
+names: 
+  - fire
+  - smoke
+  - bothFireAndSmoke
+  - neitherFireNorSmoke

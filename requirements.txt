@@ -1,7 +1,4 @@
-ultralytics>=8.0.0
+numpy 
+ultralytics
 scikit-learn
 opencv-python
-python-dotenv
-mindmeld[dvc]
-dagshub
-requests

@@ -2,36 +2,12 @@ from ultralytics import YOLO
 from datetime import datetime
 import shutil, os, time
 
-def train_fasdd_model(
-    data_config="fasdd.yaml",
-    model_name="yolov9s.pt",
-    epochs=15,
-    batch=16,
-    imgsz=320,
-    device=0,
-    workers=2,
-    cache=True,
-    amp=True,
-    patience=5,
-    save_period=5,
-    verbose=True
-):
+def train_fasdd_model(model_name="yolov8n.pt"):
     """
     Train YOLO model on FASDD dataset
     
     Args:
-        data_config (str): Path to dataset YAML configuration
         model_name (str): YOLO model to use
-        epochs (int): Number of training epochs
-        batch (int): Batch size (try 32 if VRAM allows; reduce if OOM)
-        imgsz (int): Image size for training
-        device (int): GPU device ID (0 for first GPU)
-        workers (int): Number of worker threads
-        cache (bool): Cache images for faster training
-        amp (bool): Use mixed precision training
-        patience (int): Early stopping patience
-        save_period (int): Save checkpoint every N epochs
-        verbose (bool): Verbose output
     """
     
     # Generate timestamp for logging
@@ -39,41 +15,69 @@ def train_fasdd_model(
     
     # Load model (downloads automatically if doesn't exist)
     model = YOLO(model_name)
-    
+    dst_dir = f"models/{ts}"
+
     # Train the model
+    # results = model.train(
+    #     data="fasdd.yaml",      # Path to dataset YAML file
+    #     epochs=5,               # Number of training epochs
+    #     batch=32,               # Batch size
+    #     imgsz=320,               # Image size (pixels)
+    #     device="mps",           # Device to use (0 for GPU, 'cpu' for CPU, 'mps' for Apple Silicon)
+    #     workers=16,             # Number of dataloader worker threads
+    #     cache="disk",           # Cache images for faster training
+    #     amp=True,               # Use Automatic Mixed Precision (faster on supported hardware)
+    #     patience=2,             # Early stopping patience (epochs)
+    #     save_period=5,          # Save checkpoint every N epochs
+    #     verbose=True,           # Print detailed training logs
+    # )
+
     results = model.train(
-        data=data_config,
-        epochs=epochs,
-        batch=batch,
-        imgsz=imgsz,
-        device=device,
-        workers=workers,
-        cache=cache,
-        amp=amp,
-        patience=patience,
-        save_period=save_period,
-        verbose=verbose,
+        data="fasdd.yaml",
+        epochs=5,
+        batch=16,             
+        imgsz=320,
+        device="mps",
+        workers=8,           
+        cache="ram",
+        amp=True,
+        patience=5,
+        verbose=True,
+        val=True,
+        plots=True,
+        save=True,
     )
-    
-    # Save CSV metrics
-    src = "runs/detect/train/results.csv"
-    dst_dir = "training_logs"
+    print("✅ Training completed successfully!")
+
+    # save trained model
     os.makedirs(dst_dir, exist_ok=True)
-    
-    model_base = model_name.replace('.pt', '')
-    dst_file = f"{dst_dir}/{model_base}_{ts}.csv"
-    
-    if os.path.exists(src):
-        shutil.copy(src, dst_file)
-        print(f"📈 CSV salvo em {dst_file}")
-    else:
-        print("⚠️  Arquivo de resultados não encontrado")
-    
+    model_path = f"{dst_dir}/{model_name.replace('.pt', '')}_{ts}.pt"
+    model.save(model_path)
+    print(f"✅ Model saved to {model_path}")
+
+    # Print other useful metrics if available
+    if hasattr(results, "box"):
+        print(f"mAP50: {results.box.map50:.4f}")
+        print(f"mAP50-95: {results.box.map:.4f}")
+    if hasattr(results, "results_dict"):
+        print("Other metrics:", results.results_dict)
+
     return results
 
 if __name__ == "__main__":
-    # Train with default parameters
-    results = train_fasdd_model()
+    # Debug: Check if YAML file exists
+    import os
+    yaml_path = "fasdd.yaml"
+    print(f"🔍 Checking YAML file: {yaml_path}")
+    print(f"📁 Current directory: {os.getcwd()}")
+    print(f"✅ YAML exists: {os.path.exists(yaml_path)}")
+    
+    if os.path.exists(yaml_path):
+        print(f"📋 Starting training...")
+        # Train with default parameters
+        results = train_fasdd_model()
+    else:
+        print(f"❌ YAML file not found at: {os.path.abspath(yaml_path)}")
     
     # Or train with custom parameters (uncomment to use):
     # results = train_fasdd_model(

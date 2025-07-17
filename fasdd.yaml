@@ -1,9 +1,9 @@
 # FASDD Dataset - 4.5GB optimized version for Google Colab
 # Total files: 149,042 | Size: 4.50 GB | Reduction: ~62% from original
 
-path: dataset1000
+path: /mnt/FASDD_CV
 train: annotations/train.txt
-val: annotations/val.txt  
+val: annotations/val.txt
 test: annotations/test.txt
 
 # Classes
@@ -12,3 +12,8 @@ names:
   - smoke
   - bothFireAndSmoke
   - neitherFireNorSmoke
+
+# Additional configuration for YOLOv8
+# Since we have labels in a separate directory, we need to ensure it's accessible
+# The labels should be in: /mnt/FASDD_CV/labels/
+# The images should be in: /mnt/FASDD_CV/images/

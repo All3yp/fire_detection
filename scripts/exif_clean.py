@@ -9,7 +9,7 @@ def get_image_files(path):
     from pathlib import Path
     return list(Path(path).rglob('*.jpg')) + list(Path(path).rglob('*.png'))
 
-file_names = get_image_files(path="datasets4gb/images")
+file_names = get_image_files(path="/mnt/FASDD_CV/images/")
 
 def remove_exif(image_name):
     image = Image.open(image_name)
